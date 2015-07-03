@@ -3,6 +3,7 @@ __author__ = 'frank'
 from flask import Flask
 from flask import request
 from flask import render_template
+from flask import send_from_directory
 import argparse
 import utils
 import simplejson
@@ -15,7 +16,8 @@ import logging
 import kombu
 
 template_dir = os.path.join(os.path.dirname(__file__), 'static/templates')
-app = Flask(__name__, template_folder=template_dir)
+static_dir = os.path.join(os.path.dirname(__file__), 'static_new')
+app = Flask(__name__, template_folder=template_dir, static_url_path=static_dir)
 
 utils.configure_log("/var/log/zstack/zstack-ui.log")
 log = utils.get_logger(__name__)
@@ -417,6 +419,10 @@ def api_query():
 @app.route("/")
 def index():
     return render_template("index.html")
+
+@app.route('/new')
+def root():
+    return app.send_static_file('index.html')
 
 def main():
     logging.getLogger('pika').setLevel(logging.DEBUG)
