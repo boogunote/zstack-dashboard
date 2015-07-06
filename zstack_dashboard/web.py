@@ -4,6 +4,7 @@ from flask import Flask
 from flask import request
 from flask import render_template
 from flask import send_from_directory
+from flask.ext.socketio import SocketIO
 import argparse
 import utils
 import simplejson
@@ -17,7 +18,9 @@ import kombu
 
 template_dir = os.path.join(os.path.dirname(__file__), 'static/templates')
 static_dir = os.path.join(os.path.dirname(__file__), 'static_new')
-app = Flask(__name__, template_folder=template_dir, static_url_path=static_dir)
+app = Flask(__name__, template_folder=template_dir)
+app.config['SECRET_KEY'] = 'secret!'
+socketio = SocketIO(app)
 
 utils.configure_log("/var/log/zstack/zstack-ui.log")
 log = utils.get_logger(__name__)
@@ -420,13 +423,26 @@ def api_query():
 def index():
     return render_template("index.html")
 
-@app.route('/new')
-def root():
-    return app.send_static_file('index.html')
+@app.route('/new/<path:path>')
+def root(path):
+    return send_from_directory(static_dir, path)
+
+@socketio.on('message')
+def handle_my_custom_event(message):
+    log.debug('received message: ' + message)
+
+@socketio.on('json')
+def handle_json(json):
+    log.debug('received json: ' + str(json))
+
+@socketio.on('my event')
+def handle_my_custom_event(json):
+    log.debug('my event received json: ' + str(json))
 
 def main():
     logging.getLogger('pika').setLevel(logging.DEBUG)
-    app.run(host="0.0.0.0", threaded=True)
+    # app.run(host="0.0.0.0", threaded=True)
+    socketio.run(app, host="0.0.0.0")
 
 if __name__ == "__main__":
     main()
