@@ -5,6 +5,8 @@ from flask import request
 from flask import render_template
 from flask import send_from_directory
 from flask.ext.socketio import SocketIO
+from flask.ext.socketio import emit
+from flask.ext.socketio import join_room, leave_room
 import argparse
 import utils
 import simplejson
@@ -435,9 +437,23 @@ def handle_my_custom_event(message):
 def handle_json(json):
     log.debug('received json: ' + str(json))
 
-@socketio.on('my event')
-def handle_my_custom_event(json):
-    log.debug('my event received json: ' + str(json))
+@socketio.on('login')
+def handle_login(data):
+    log.debug('login ' + str(data['msg']))
+    retMsg = server.api_sync_call(data['msg'])
+    log.debug('login ret:' + str(retMsg))
+    emit('login_ret', {'msg': retMsg});
+
+@socketio.on('admin_broadcast')
+def handle_admin_broadcast(json):
+    log.debug('admin_broadcast: ' + str(json))
+    socketio.emit('admin_broadcast', json, room='admin')
+
+@socketio.on('join_admin')
+def handle_join_admin(data):
+    log.debug('aaaaaaaaaaaaaaaaaa:' + str(data['room']))
+    join_room(data['room'])
+    log.debug('join room: ' + str(data['room']))
 
 def main():
     logging.getLogger('pika').setLevel(logging.DEBUG)
